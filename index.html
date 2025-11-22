@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>FPS Elite: All Stars</title>
+    <style>
+        :root {
+            --gsw-blue: #1D428A;
+            --gsw-yellow: #FFC72C;
+            --skin: #8d5524;
+            --ice-hair: #FFA500;
+            --skin-light: #d2a679;
+        }
+        body {
+            margin: 0; overflow: hidden; font-family: 'Segoe UI', monospace;
+            background: #111; user-select: none; cursor: none;
+        }
+
+        #scene {
+            position: relative; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #2b2b2b 0%, #000 100%);
+            overflow: hidden; perspective: 1200px;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute; top: 20px; left: 20px; color: #00ff00; font-size: 24px;
+            z-index: 100; text-shadow: 0 0 8px rgba(0, 255, 0, 0.8); font-weight: bold; pointer-events: none;
+        }
+
+        /* Пол */
+        #floor {
+            position: absolute; bottom: 0; width: 100%; height: 50%;
+            background: 
+                linear-gradient(rgba(30,30,30,0.9), #000),
+                repeating-linear-gradient(90deg, transparent 0, transparent 49px, rgba(0, 255, 0, 0.1) 50px),
+                repeating-linear-gradient(0deg, transparent 0, transparent 49px, rgba(0, 255, 0, 0.1) 50px);
+            transform-origin: bottom; transform: rotateX(60deg) scale(2); z-index: 1;
+        }
+
+        /* === УЛУЧШЕННАЯ ICE SPICE (Центр) === */
+        #ice-spice-wrapper {
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            width: 100px; height: 200px; z-index: 15;
+        }
+        .ice-nametag {
+            position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(45deg, #ff69b4, #ff1493);
+            color: #fff; padding: 4px 12px; border-radius: 20px;
+            font-size: 14px; font-weight: bold; border: 2px solid #fff;
+            box-shadow: 0 0 10px #ff1493; white-space: nowrap; font-family: sans-serif;
+            animation: floatTag 2s infinite ease-in-out;
+        }
+        .ice-body-group {
+            position: relative; width: 100%; height: 100%;
+            animation: danceMove 0.8s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95) alternate;
+        }
+        .ice-fro {
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            width: 70px; height: 60px; background: var(--ice-hair);
+            border-radius: 50%; box-shadow: inset -5px -5px 10px rgba(0,0,0,0.2); z-index: 4;
+        }
+        .ice-head {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 35px; height: 40px; background: var(--skin-light); border-radius: 12px; z-index: 3;
+        }
+        .ice-top {
+            position: absolute; top: 45px; left: 50%; transform: translateX(-50%);
+            width: 45px; height: 35px; background: #fff; border-radius: 8px; z-index: 2;
+        }
+        .ice-chain {
+            position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+            width: 30px; height: 20px; border-bottom: 4px solid gold; border-radius: 50%; z-index: 3;
+        }
+        .ice-hips {
+            position: absolute; top: 75px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 45px; background: #87CEEB; border-radius: 10px; z-index: 1;
+        }
+        .ice-leg {
+            position: absolute; top: 115px; width: 18px; height: 70px; background: var(--skin-light); border-radius: 5px;
+        }
+        .ice-leg.l { left: 20px; } .ice-leg.r { right: 20px; }
+        .ice-arm {
+            position: absolute; top: 50px; width: 12px; height: 60px; background: var(--skin-light); border-radius: 5px; z-index: 3; transform-origin: top;
+        }
+        .ice-arm.l { left: 10px; transform: rotate(20deg); animation: armWave 0.8s infinite alternate; }
+        .ice-arm.r { right: 10px; transform: rotate(-20deg); animation: armWave 0.8s infinite alternate-reverse; }
+
+        @keyframes danceMove {
+            0% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(5px) rotate(-2deg); }
+            75% { transform: translateY(5px) rotate(2deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+        @keyframes armWave { 0% { transform: rotate(20deg); } 100% { transform: rotate(40deg); } }
+        @keyframes floatTag { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-5px); } }
+
+
+        /* === МАНЕКЕН (ЦЕЛЬ) === */
+        #mannequin {
+            position: absolute; top: 45%; left: 25%; transform: translate(-50%, -50%);
+            z-index: 10; width: auto; height: auto; background: none; transition: filter 0.05s;
+        }
+
+        /* === БАСКЕТБОЛ (СПРАВА) === */
+        #hoop-complex { position: absolute; top: 25%; right: 10%; z-index: 5; transform: scale(1.3); }
+        .hoop-stand { position: absolute; bottom: -300px; right: 40px; width: 15px; height: 400px; background: #444; border-left: 3px solid #222; }
+        .hoop-backboard { position: relative; width: 140px; height: 95px; background: rgba(255,255,255,0.9); border: 2px solid #ccc; border-bottom: 4px solid #999; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .hoop-square { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 50px; height: 40px; border: 3px solid #c00; }
+        .hoop-rim { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 60px; height: 4px; background: #ff6f00; border-radius: 2px; z-index: 6; }
+        .hoop-rim-front { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 60px; height: 25px; border: 4px solid #ff6f00; border-top: none; border-radius: 0 0 30px 30px; z-index: 20; }
+        .hoop-net { position: absolute; bottom: -55px; left: 50%; transform: translateX(-50%); width: 50px; height: 50px; background: linear-gradient(45deg, transparent 45%, #eee 45%, #eee 55%, transparent 55%), linear-gradient(-45deg, transparent 45%, #eee 45%, #eee 55%, transparent 55%); background-size: 10px 10px; clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%); opacity: 0.8; z-index: 4; }
+
+        /* СТЕФАН КАРРИ */
+        #curry-wrapper { position: absolute; bottom: 20%; right: 20%; width: 80px; height: 200px; z-index: 8; }
+        .c-body { position: absolute; }
+        .c-head { top: 0; left: 20px; width: 35px; height: 40px; background: var(--skin); border-radius: 10px; z-index: 3; }
+        .c-beard { position: absolute; bottom: 0; width: 100%; height: 15px; background: #3e2723; border-radius: 0 0 10px 10px; }
+        .c-jersey { top: 40px; left: 10px; width: 55px; height: 70px; background: var(--gsw-blue); border-radius: 10px 10px 0 0; z-index: 2; display: flex; justify-content: center; align-items: center; color: var(--gsw-yellow); font-weight: bold; font-size: 18px; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+        .c-shorts { top: 105px; left: 10px; width: 55px; height: 50px; background: var(--gsw-blue); border-top: 2px solid var(--gsw-yellow); z-index: 1; }
+        .c-shorts::before, .c-shorts::after { content: ''; position: absolute; top: 0; width: 4px; height: 100%; background: var(--gsw-yellow); }
+        .c-shorts::after { right: 0; }
+        .c-leg { position: absolute; width: 15px; height: 60px; background: var(--skin); bottom: -15px; }
+        .c-leg.l { left: 15px; } .c-leg.r { right: 15px; }
+        .c-arm { position: absolute; top: 45px; width: 12px; height: 70px; background: var(--skin); z-index: 4; transform-origin: top center; transition: transform 0.2s; }
+        .c-arm.l { left: 5px; transform: rotate(10deg); } .c-arm.r { right: 5px; transform: rotate(-10deg); }
+        .ball { position: absolute; width: 24px; height: 24px; background: radial-gradient(circle at 35% 35%, #ff8800, #d35400); border-radius: 50%; border: 1px solid #a04000; z-index: 100; }
+        .ball::before { content: ''; position: absolute; width: 100%; height: 100%; border: 1px solid rgba(0,0,0,0.3); border-radius: 50%; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 50%); }
+
+        /* ОРУЖИЕ */
+        #weapon-rig { position: absolute; bottom: -10px; right: 30%; width: 300px; height: 400px; pointer-events: none; z-index: 90; transition: transform 0.08s ease-out; }
+        .gun-body { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 60px; height: 350px; background: linear-gradient(90deg, #111, #333, #111); border-radius: 5px 5px 0 0; }
+        .gun-rail { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 10px; height: 350px; background: #000; }
+        #muzzle-flash { position: absolute; top: -60px; left: 50%; transform: translateX(-50%); width: 120px; height: 120px; background: radial-gradient(closest-side, #fff, #ffeb3b, transparent); opacity: 0; mix-blend-mode: screen; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; pointer-events: none; z-index: 200; }
+        .ch-line { position: absolute; background: #0f0; box-shadow: 0 0 4px #0f0; }
+        .ch-h { top: 11px; left: 0; width: 24px; height: 2px; } .ch-v { top: 0; left: 11px; width: 2px; height: 24px; } .ch-dot { top: 10px; left: 10px; width: 4px; height: 4px; background: red; border-radius: 50%; }
+        .bullet-hole { position: absolute; width: 8px; height: 8px; background: #111; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255,255,255,0.3); pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div id="scene">
+    <div id="hud">SCORE: <span id="score">0</span><br>3-POINTERS: <span id="threes">0</span></div>
+    <div id="floor"></div>
+
+    <!-- ICE SPICE (CENTER) -->
+    <div id="ice-spice-wrapper">
+        <div class="ice-nametag">Ice Spice 🌶️</div>
+        <div class="ice-body-group">
+            <div class="ice-fro"></div>
+            <div class="ice-head"></div>
+            <div class="ice-chain"></div>
+            <div class="ice-top"></div>
+            <div class="ice-arm l"></div><div class="ice-arm r"></div>
+            <div class="ice-hips"></div>
+            <div class="ice-leg l"></div><div class="ice-leg r"></div>
+        </div>
+    </div>
+
+    <!-- МАНЕКЕН (ЦЕЛЬ) -->
+    <div id="mannequin">
+        <img src="https://th-i.thgim.com/public/news/national/qdvjbx/article70046755.ece/alternates/FREE_1200/charlie%20kirk_Art.jpg" 
+             style="width: 150px; height: auto; pointer-events: none; user-select: none; display: block;">
+    </div>
+
+    <!-- БАСКЕТБОЛ -->
+    <div id="hoop-complex">
+        <div class="hoop-stand"></div>
+        <div class="hoop-backboard"><div class="hoop-square"></div></div>
+        <div class="hoop-rim"></div><div class="hoop-net"></div><div class="hoop-rim-front"></div>
+    </div>
+    <div id="curry-wrapper">
+        <div class="c-body c-head"><div class="c-beard"></div></div>
+        <div class="c-body c-jersey">30</div>
+        <div class="c-body c-shorts"></div>
+        <div class="c-body c-leg l"></div><div class="c-body c-leg r"></div>
+        <div class="c-arm l"></div><div class="c-arm r"></div>
+    </div>
+
+    <!-- ОРУЖИЕ -->
+    <div id="weapon-rig">
+        <div class="gun-body"><div class="gun-rail"></div></div>
+        <div id="muzzle-flash"></div>
+    </div>
+    <div id="crosshair">
+        <div class="ch-line ch-h"></div><div class="ch-line ch-v"></div><div class="ch-line ch-dot"></div>
+    </div>
+</div>
+
+<script>
+    const scene = document.getElementById('scene');
+    const weapon = document.getElementById('weapon-rig');
+    const flash = document.getElementById('muzzle-flash');
+    const mannequin = document.getElementById('mannequin');
+    const scoreEl = document.getElementById('score');
+    const threesEl = document.getElementById('threes');
+    const curry = document.getElementById('curry-wrapper');
+    const armL = document.querySelector('.c-arm.l');
+    const armR = document.querySelector('.c-arm.r');
+    let score = 0; let threes = 0;
+
+    document.addEventListener('mousemove', (e) => {
+        const xPct = (e.clientX / window.innerWidth) - 0.5;
+        const yPct = (e.clientY / window.innerHeight) - 0.5;
+        weapon.style.transform = `translateX(${xPct * 100}px) translateY(${yPct * 40}px) rotateY(${xPct * 15}deg) rotateX(${-yPct * 10}deg)`;
+        const ch = document.getElementById('crosshair');
+        ch.style.left = e.clientX + 'px'; ch.style.top = e.clientY + 'px';
+    });
+
+    document.addEventListener('mousedown', (e) => {
+        playAudio(800, 'sawtooth', 0.1);
+        const currentTransform = weapon.style.transform;
+        weapon.style.transform = currentTransform + " translateY(20px) scale(0.95)";
+        setTimeout(() => weapon.style.transform = currentTransform, 50);
+        flash.style.opacity = 1; setTimeout(() => flash.style.opacity = 0, 50);
+
+        const rect = mannequin.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            hitMannequin(e.clientX, e.clientY, rect);
+        }
+    });
+
+    function hitMannequin(x, y, rect) {
+        score += 50; scoreEl.innerText = score;
+        const hole = document.createElement('div'); hole.className = 'bullet-hole';
+        hole.style.left = (x - rect.left) + 'px'; hole.style.top = (y - rect.top) + 'px';
+        mannequin.appendChild(hole);
+        mannequin.style.filter = 'brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5)';
+        mannequin.style.transform = 'translate(-50%, -50%) scale(0.95)';
+        setTimeout(() => { mannequin.style.filter = 'none'; mannequin.style.transform = 'translate(-50%, -50%) scale(1)'; }, 80);
+        if (mannequin.children.length > 12) setTimeout(respawnMannequin, 200);
+    }
+
+    function respawnMannequin() {
+        document.querySelectorAll('.bullet-hole').forEach(h => h.remove());
+        mannequin.style.left = (15 + Math.random() * 20) + '%'; mannequin.style.top = (30 + Math.random() * 40) + '%';
+    }
+
+    setInterval(() => {
+        curry.style.transform = 'translateY(10px)'; armL.style.transform = 'rotate(40deg)'; armR.style.transform = 'rotate(0deg)';
+        setTimeout(() => {
+            curry.style.transform = 'translateY(-20px)'; armL.style.transform = 'rotate(130deg)'; armR.style.transform = 'rotate(110deg)';
+            createBall();
+            setTimeout(() => { curry.style.transform = 'translateY(0)'; armL.style.transform = 'rotate(10deg)'; armR.style.transform = 'rotate(-10deg)'; }, 400);
+        }, 300);
+    }, 2500);
+
+    function createBall() {
+        const ball = document.createElement('div'); ball.className = 'ball'; scene.appendChild(ball);
+        const startRect = curry.getBoundingClientRect();
+        const hoopRect = document.querySelector('.hoop-rim').getBoundingClientRect();
+        const startX = startRect.left + 10; const startY = startRect.top;
+        const targetX = hoopRect.left + (hoopRect.width / 2) - 12; const targetY = hoopRect.top;
+        let progress = 0; const startTime = performance.now();
+        
+        function animateBall(time) {
+            progress = (time - startTime) / 900;
+            if (progress > 1) { ball.remove(); threes++; threesEl.innerText = threes; return; }
+            const t = progress;
+            const x = Math.pow(1-t, 2) * startX + 2 * (1-t) * t * ( (startX + targetX) / 2 - 50 ) + Math.pow(t, 2) * targetX;
+            const y = Math.pow(1-t, 2) * startY + 2 * (1-t) * t * (targetY - 300) + Math.pow(t, 2) * targetY;
+            ball.style.left = x + 'px'; ball.style.top = y + 'px'; ball.style.transform = `scale(${1 - (t * 0.4)})`;
+            requestAnimationFrame(animateBall);
+        }
+        requestAnimationFrame(animateBall);
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playAudio(freq, type, vol) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+</script>
+</body>
+</html>
